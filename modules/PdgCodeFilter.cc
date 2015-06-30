@@ -78,6 +78,8 @@ void PdgCodeFilter::Init()
   fRequireStatus = GetBool("RequireStatus", false);
   fStatus = GetInt("Status", 1);
 
+  fRequireBHadron =  GetBool("RequireBHadron", false);
+
   // import input array
   fInputArray = ImportArray(GetString("InputArray", "Delphes/allParticles"));
   fItInputArray = fInputArray->MakeIterator();
@@ -131,7 +133,43 @@ void PdgCodeFilter::Process()
     if(find(fPdgCodes.begin(), fPdgCodes.end(), pdgCode) != fPdgCodes.end()) pass = kFALSE;
 
     if (invertPdg) pass = !pass;
-    if(pass) fOutputArray->Add(candidate);
+    if(pass && !fRequireBHadron) fOutputArray->Add(candidate);
+    else if(fRequireBHadron && isBHadron(candidate)) fOutputArray->Add(candidate);
   }
+}
+
+bool PdgCodeFilter::isBHadron(const Candidate* p) const
+{
+  const unsigned int absPdgId = abs(p->PID);
+  if ( !isBHadron(absPdgId) ) return false;
+
+  // Do not consider this particle if it has B hadron daughter
+  // For example, B* -> B0 + photon; then we drop B* and take B0 only
+  for ( int i=p->D1, n=p->D2-p->D1; i<n; ++i )
+  {
+    const Candidate* dau = (Candidate*) fInputArray->At(i);
+    if ( isBHadron(abs(dau->PID)) ) return false;
+  }
+
+  return true;
+}
+
+bool PdgCodeFilter::isBHadron(const unsigned int absPdgId) const
+{
+  if ( absPdgId <= 100 ) return false; // Fundamental particles and MC internals
+  if ( absPdgId >= 1000000000 ) return false; // Nuclei, +-10LZZZAAAI
+
+  // General form of PDG ID is 7 digit form
+  // +- n nr nL nq1 nq2 nq3 nJ
+  //const int nJ = absPdgId % 10; // Spin
+  const int nq3 = (absPdgId / 10) % 10;
+  const int nq2 = (absPdgId / 100) % 10;
+  const int nq1 = (absPdgId / 1000) % 10;
+
+  if ( nq3 == 0 ) return false; // Diquarks
+  if ( nq1 == 0 and nq2 == 5 ) return true; // B mesons
+  if ( nq1 == 5 ) return true; // B baryons
+
+  return false;
 }
 

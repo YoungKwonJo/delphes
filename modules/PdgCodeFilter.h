@@ -30,6 +30,7 @@
  */
 
 #include "classes/DelphesModule.h"
+#include "classes/DelphesClasses.h"
 #include <vector>
 
 class TIterator;
@@ -45,6 +46,8 @@ public:
   void Init();
   void Process();
   void Finish();
+  bool isBHadron(const Candidate* p) const;
+  bool isBHadron(const unsigned int absPdgId) const; 
 
 private:
 
@@ -52,6 +55,8 @@ private:
   Bool_t fInvertPdg; //!
   Bool_t fRequireStatus; //!
   Int_t fStatus; //!
+
+  Bool_t fRequireBHadron; //!
 
   std::vector<Int_t> fPdgCodes;
 

@@ -29,6 +29,7 @@ set ExecutionPath {
   MissingET
 
   NeutrinoFilter
+  BHadronFilter
   GenJetFinder
   FastJetFinder
 
@@ -445,6 +446,21 @@ module PdgCodeFilter NeutrinoFilter {
 
 }
 
+#####################
+# B-Hadron Filter
+#####################
+
+module PdgCodeFilter BHadronFilter {
+
+  set InputArray Delphes/allParticles
+  set OutputArray filteredParticles
+
+  set PTMin 0.0
+  set RequireBHadron true 
+ 
+}
+
+
 
 #####################
 # MC truth jet finder
@@ -574,6 +590,7 @@ module UniqueObjectFinder UniqueObjectFinder {
 module TreeWriter TreeWriter {
 # add Branch InputArray BranchName BranchClass
   add Branch Delphes/allParticles Particle GenParticle
+  add Branch BHadronFilter/filteredParticles BHadron GenParticle
 
   add Branch TrackMerger/tracks Track Track
   add Branch Calorimeter/towers Tower Tower
