@@ -145,7 +145,7 @@ bool PdgCodeFilter::isBHadron(const Candidate* p) const
 
   // Do not consider this particle if it has B hadron daughter
   // For example, B* -> B0 + photon; then we drop B* and take B0 only
-  for ( int i=p->D1, n=p->D2; i<n; ++i )
+  for ( int i=p->D1, n=p->D2+1; i<n; ++i )
   {
     const Candidate* dau = (Candidate*) fInputArray->At(i);
     if ( isBHadron(abs(dau->PID)) ) return false;
