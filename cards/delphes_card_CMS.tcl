@@ -468,6 +468,7 @@ module PdgCodeFilter BHadronFilter {
 
 module FastJetFinder GenJetFinder {
   set InputArray NeutrinoFilter/filteredParticles
+  set InputArray2 BHadronFilter/filteredParticles
 
   set OutputArray jets
 
@@ -476,6 +477,8 @@ module FastJetFinder GenJetFinder {
   set ParameterR 0.5
 
   set JetPTMin 20.0
+
+  set UseGhostBH true
 }
 
 

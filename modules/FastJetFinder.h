@@ -116,6 +116,9 @@ private:
   Double_t fPtScatter;
   Double_t fMeanGhostPt;
 
+  // -- ghost b hadron ---
+  Bool_t fUseGhostBH;
+
   // -- voronoi areas --
   Double_t fEffectiveRfact;
 
@@ -130,8 +133,10 @@ private:
 #endif
 
   TIterator *fItInputArray; //!
+  TIterator *fItInputArray2; //!
 
   const TObjArray *fInputArray; //!
+  const TObjArray *fInputArray2; //!
 
   TObjArray *fOutputArray; //!
   TObjArray *fRhoOutputArray; //!

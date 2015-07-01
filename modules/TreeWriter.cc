@@ -573,6 +573,7 @@ void TreeWriter::ProcessJets(ExRootTreeBranch *branch, TObjArray *array)
 
     entry->BTagAlgo = candidate->BTagAlgo;
     entry->BTagPhys = candidate->BTagPhys;
+    entry->IsBH = candidate->IsBH;
 
     entry->TauTag = candidate->TauTag;
 

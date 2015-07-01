@@ -77,7 +77,7 @@ using namespace fastjet::contrib;
 //------------------------------------------------------------------------------
 
 FastJetFinder::FastJetFinder() :
-  fPlugin(0), fRecomb(0), fNjettinessPlugin(0), fDefinition(0), fAreaDefinition(0), fItInputArray(0)
+  fPlugin(0), fRecomb(0), fNjettinessPlugin(0), fDefinition(0), fAreaDefinition(0), fItInputArray(0), fItInputArray2(0)
 {
 
 }
@@ -157,6 +157,9 @@ void FastJetFinder::Init()
   fGridScatter = GetDouble("GridScatter", 1.0);
   fPtScatter = GetDouble("PtScatter", 0.1);
   fMeanGhostPt = GetDouble("MeanGhostPt", 1.0E-100);
+
+  // - ghost b-hadron -
+  fUseGhostBH  = GetBool("UseGhostBH", false);
 
   // - voronoi based areas -
   fEffectiveRfact = GetDouble("EffectiveRfact", 1.0);
@@ -245,7 +248,9 @@ void FastJetFinder::Init()
   // import input array
 
   fInputArray = ImportArray(GetString("InputArray", "Calorimeter/towers"));
+  fInputArray2 = ImportArray(GetString("InputArray2", "Calorimeter/towers"));
   fItInputArray = fInputArray->MakeIterator();
+  fItInputArray2 = fInputArray2->MakeIterator();
 
   // create output arrays
 
@@ -265,6 +270,7 @@ void FastJetFinder::Finish()
   }
 
   if(fItInputArray) delete fItInputArray;
+  if(fItInputArray2) delete fItInputArray2;
   if(fDefinition) delete fDefinition;
   if(fAreaDefinition) delete fAreaDefinition;
   if(fPlugin) delete static_cast<JetDefinition::Plugin*>(fPlugin);
@@ -282,25 +288,43 @@ void FastJetFinder::Process()
   Double_t deta, dphi, detaMax, dphiMax;
   Double_t time, timeWeight;
   Int_t number;
+  Int_t isBH; 
   Double_t rho = 0.0;
   PseudoJet jet, area;
   ClusterSequence *sequence;
   vector< PseudoJet > inputList, outputList, subjets;
   vector< PseudoJet >::iterator itInputList, itOutputList;
   vector< TEstimatorStruct >::iterator itEstimators;
+  set<Int_t> bHadronIdxs;
 
   DelphesFactory *factory = GetFactory();
 
   inputList.clear();
+  bHadronIdxs.clear();
 
   // loop over input objects
   fItInputArray->Reset();
+  fItInputArray2->Reset();
   number = 0;
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
     momentum = candidate->Momentum;
     jet = PseudoJet(momentum.Px(), momentum.Py(), momentum.Pz(), momentum.E());
     jet.set_user_index(number);
+    inputList.push_back(jet);
+    ++number;
+  }
+  //// put ghost-B hadrons
+  if(fUseGhostBH) 
+  while((candidate = static_cast<Candidate*>(fItInputArray2->Next())))
+  {
+    momentum = candidate->Momentum;
+    if ( std::isnan(momentum.Pt()) or momentum.Pt() <= 0 ) continue;
+    const double scale = 1e-20/momentum.P();
+
+    jet = PseudoJet(momentum.Px()*scale, momentum.Py()*scale, momentum.Pz()*scale, momentum.E()*scale);
+    jet.set_user_index(number);
+    bHadronIdxs.insert(number);
     inputList.push_back(jet);
     ++number;
   }
@@ -334,13 +358,13 @@ void FastJetFinder::Process()
   outputList.clear();
   outputList = sorted_by_pt(sequence->inclusive_jets(fJetPTMin));
 
-
   // loop over all jets and export them
   detaMax = 0.0;
   dphiMax = 0.0;
   for(itOutputList = outputList.begin(); itOutputList != outputList.end(); ++itOutputList)
   {
     jet = *itOutputList;
+
     if(fJetAlgorithm == 7) jet = join(jet.constituents());
 
     momentum.SetPxPyPzE(jet.px(), jet.py(), jet.pz(), jet.E());
@@ -355,9 +379,15 @@ void FastJetFinder::Process()
 
     inputList.clear();
     inputList = sequence->constituents(*itOutputList);
-
+    
+    isBH=0;
     for(itInputList = inputList.begin(); itInputList != inputList.end(); ++itInputList)
     {
+      if ( bHadronIdxs.find(itInputList->user_index()) != bHadronIdxs.end() )
+      {
+         isBH++; 
+         continue;
+      }
       constituent = static_cast<Candidate*>(fInputArray->At(itInputList->user_index()));
 
       deta = TMath::Abs(momentum.Eta() - constituent->Momentum.Eta());
@@ -377,6 +407,7 @@ void FastJetFinder::Process()
 
     candidate->DeltaEta = detaMax;
     candidate->DeltaPhi = dphiMax;
+    candidate->IsBH = isBH;
        
     //------------------------------------
     // Trimming
@@ -495,7 +526,6 @@ void FastJetFinder::Process()
       candidate->Tau[3] = nSub4(*itOutputList);
       candidate->Tau[4] = nSub5(*itOutputList);
     }
-
     fOutputArray->Add(candidate);
   }
   delete sequence;

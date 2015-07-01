@@ -350,6 +350,7 @@ public:
   UInt_t BTag; // 0 or 1 for a jet that has been tagged as containing a heavy quark
   UInt_t BTagAlgo;
   UInt_t BTagPhys;
+  Int_t IsBH; // from b-Hadron
 
   UInt_t TauTag; // 0 or 1 for a jet that has been tagged as a tau
 
@@ -504,6 +505,7 @@ public:
   Int_t IsPU;
   Int_t IsRecoPU;
 
+
   Int_t IsConstituent;
 
   UInt_t Flavor;
@@ -513,6 +515,7 @@ public:
   UInt_t BTag;
   UInt_t BTagAlgo;
   UInt_t BTagPhys;
+  Int_t IsBH;
 
   UInt_t TauTag;
 
